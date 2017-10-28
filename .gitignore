@@ -3,3 +3,4 @@ build
 .gradle
 **/credentials.properties
 
+/instagram-scraper.iml
