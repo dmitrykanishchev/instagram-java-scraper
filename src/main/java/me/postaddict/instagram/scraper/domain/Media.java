@@ -15,6 +15,7 @@ public class Media {
     public static final String TYPE_VIDEO = "video";
     public static final String TYPE_CAROUSEL = "carousel";
     public static final long INSTAGRAM_BORN_YEAR = 1262304000000L;
+    private static final String LINK_PREFIX = "https://www.instagram.com/p/";
     public String id;
     public long createdTime;
     public String type;
@@ -33,10 +34,10 @@ public class Media {
     public String locationName;
 
     public static class CarouselMedia {
-    	public String type;
-    	public ImageUrls imageUrls = new ImageUrls();
-    	public VideoUrls videoUrls = new VideoUrls();
-    	public int videoViews;
+        public String type;
+        public ImageUrls imageUrls = new ImageUrls();
+        public VideoUrls videoUrls = new VideoUrls();
+        public int videoViews;
     }
 
     public static class ImageUrls {
@@ -74,38 +75,38 @@ public class Media {
     public static Media fromApi(Map mediaMap) {
         Media instance = new Media();
         instance.id = (String) mediaMap.get("id");
-        instance.createdTime = Long.parseLong((String) mediaMap.get("created_time"));
+        instance.createdTime = Double.valueOf(Double.toString((Double) mediaMap.get("date"))).longValue();
         fixDate(instance);
-        instance.type = (String) mediaMap.get("type");
-        instance.link = (String) mediaMap.get("link");
+        instance.type = (String) mediaMap.get("__typename");
         instance.shortcode = (String) mediaMap.get("code");
+        instance.link = LINK_PREFIX + instance.shortcode;
         if (mediaMap.get("caption") != null) {
-            instance.caption = (String) ((Map) mediaMap.get("caption")).get("text");
+            instance.caption = (String) mediaMap.get("caption");
         }
 
-        Map images = (Map) mediaMap.get("images");
-        fillImageUrls(instance, (String)((Map)images.get("standard_resolution")).get("url"));
+        /*Map images = (Map) mediaMap.get("images");
+        fillImageUrls(instance, (String) ((Map) images.get("standard_resolution")).get("url"));
         instance.commentsCount = (new Double(((Map) mediaMap.get("comments")).get("count").toString())).intValue();
         instance.likesCount = (new Double(((Map) mediaMap.get("likes")).get("count").toString())).intValue();
 
-        if(instance.type.equals(TYPE_CAROUSEL) && mediaMap.containsKey("carousel_media")){
-        	instance.carouselMedia = new ArrayList<CarouselMedia>();
-        	for(Map<String, Object> carouselMap : ((List<Map>) mediaMap.get("carousel_media"))){
-        		CarouselMedia carouselMedia = new CarouselMedia();
-        		carouselMedia.type = (String) carouselMap.get("type");
-        		
-        		if(carouselMap.containsKey("images")){
-        			Map carouselImages = (Map) carouselMap.get("images");
-        	        fillCarouselImageUrls(carouselMedia, (String)((Map)carouselImages.get("standard_resolution")).get("url"));
-        		}
-        		if (carouselMedia.type.equals(TYPE_VIDEO) && carouselMap.containsKey("videos")) {
+        if (instance.type.equals(TYPE_CAROUSEL) && mediaMap.containsKey("carousel_media")) {
+            instance.carouselMedia = new ArrayList<CarouselMedia>();
+            for (Map<String, Object> carouselMap : ((List<Map>) mediaMap.get("carousel_media"))) {
+                CarouselMedia carouselMedia = new CarouselMedia();
+                carouselMedia.type = (String) carouselMap.get("type");
+
+                if (carouselMap.containsKey("images")) {
+                    Map carouselImages = (Map) carouselMap.get("images");
+                    fillCarouselImageUrls(carouselMedia, (String) ((Map) carouselImages.get("standard_resolution")).get("url"));
+                }
+                if (carouselMedia.type.equals(TYPE_VIDEO) && carouselMap.containsKey("videos")) {
                     Map carouselVideos = (Map) carouselMap.get("videos");
                     carouselMedia.videoUrls.low = (String) ((Map) carouselVideos.get("low_resolution")).get("url");
                     carouselMedia.videoUrls.standard = (String) ((Map) carouselVideos.get("standard_resolution")).get("url");
                     carouselMedia.videoUrls.lowBandwidth = (String) ((Map) carouselVideos.get("low_bandwidth")).get("url");
                 }
-        		instance.carouselMedia.add(carouselMedia);
-        	}
+                instance.carouselMedia.add(carouselMedia);
+            }
         }
         if (instance.type.equals(TYPE_VIDEO) && mediaMap.containsKey("videos")) {
             Map videos = (Map) mediaMap.get("videos");
@@ -115,9 +116,9 @@ public class Media {
         }
 
         instance.previewCommentsList = new ArrayList<Comment>();
-        if (instance.commentsCount > 0){
-            for (Object o: (List)((Map)mediaMap.get("comments")).get("data")){
-                instance.previewCommentsList.add(Comment.fromApi((Map)o));
+        if (instance.commentsCount > 0) {
+            for (Object o : (List) ((Map) mediaMap.get("comments")).get("data")) {
+                instance.previewCommentsList.add(Comment.fromApi((Map) o));
             }
         }
         instance.owner = Account.fromMediaPage((Map) mediaMap.get("user"));
@@ -126,12 +127,12 @@ public class Media {
             if (location.containsKey("name")) {
                 instance.locationName = (String) location.get("name");
             }
-        }
+        }*/
         return instance;
     }
 
     private static void fixDate(Media instance) {
-        if(instance.createdTime > 0 && instance.createdTime < INSTAGRAM_BORN_YEAR){
+        if (instance.createdTime > 0 && instance.createdTime < INSTAGRAM_BORN_YEAR) {
             instance.createdTime *= 1000;
         }
     }
@@ -143,36 +144,36 @@ public class Media {
         if ((Boolean) pageMap.get("is_video")) {
             instance.type = TYPE_VIDEO;
             instance.videoUrls.standard = (String) pageMap.get("video_url");
-            instance.videoViews = ((Double)pageMap.get("video_view_count")).intValue();
+            instance.videoViews = ((Double) pageMap.get("video_view_count")).intValue();
         }
-        if(pageMap.containsKey("carousel_media")){
-        	instance.type = TYPE_CAROUSEL;
-        	instance.carouselMedia = new ArrayList<CarouselMedia>();
-        	for(Map<String, Object> carouselMap : ((List<Map>) pageMap.get("carousel_media"))){
-        		CarouselMedia carouselMedia = new CarouselMedia();
-        		carouselMedia.type = (String) carouselMap.get("type");
-        		
-        		if(carouselMap.containsKey("images")){
-        			Map carouselImages = (Map) carouselMap.get("images");
-        	        fillCarouselImageUrls(carouselMedia, (String)((Map)carouselImages.get("standard_resolution")).get("url"));
-        		}
-        		if (carouselMedia.type.equals(TYPE_VIDEO) && carouselMap.containsKey("videos")) {
+        if (pageMap.containsKey("carousel_media")) {
+            instance.type = TYPE_CAROUSEL;
+            instance.carouselMedia = new ArrayList<CarouselMedia>();
+            for (Map<String, Object> carouselMap : ((List<Map>) pageMap.get("carousel_media"))) {
+                CarouselMedia carouselMedia = new CarouselMedia();
+                carouselMedia.type = (String) carouselMap.get("type");
+
+                if (carouselMap.containsKey("images")) {
+                    Map carouselImages = (Map) carouselMap.get("images");
+                    fillCarouselImageUrls(carouselMedia, (String) ((Map) carouselImages.get("standard_resolution")).get("url"));
+                }
+                if (carouselMedia.type.equals(TYPE_VIDEO) && carouselMap.containsKey("videos")) {
                     Map carouselVideos = (Map) carouselMap.get("videos");
                     carouselMedia.videoUrls.low = (String) ((Map) carouselVideos.get("low_resolution")).get("url");
                     carouselMedia.videoUrls.standard = (String) ((Map) carouselVideos.get("standard_resolution")).get("url");
                     carouselMedia.videoUrls.lowBandwidth = (String) ((Map) carouselVideos.get("low_bandwidth")).get("url");
                 }
-        		instance.carouselMedia.add(carouselMedia);
-        	}
+                instance.carouselMedia.add(carouselMedia);
+            }
         }
         instance.createdTime = ((Double) pageMap.get("taken_at_timestamp")).longValue();
         fixDate(instance);
         instance.shortcode = (String) pageMap.get("shortcode");
         instance.link = INSTAGRAM_URL + "p/" + instance.shortcode;
-        instance.commentsCount = ((Double)((Map) pageMap.get("edge_media_to_comment")).get("count")).intValue();
-        instance.likesCount = ((Double)((Map) pageMap.get("edge_media_preview_like")).get("count")).intValue();
+        instance.commentsCount = ((Double) ((Map) pageMap.get("edge_media_to_comment")).get("count")).intValue();
+        instance.likesCount = ((Double) ((Map) pageMap.get("edge_media_preview_like")).get("count")).intValue();
         fillImageUrls(instance, (String) pageMap.get("display_url"));
-        String caption = (String)((Map)((Map)((List)((Map)pageMap.get("edge_media_to_caption")).get("edges")).get(0)).get("node")).get("text");
+        String caption = (String) ((Map) ((Map) ((List) ((Map) pageMap.get("edge_media_to_caption")).get("edges")).get(0)).get("node")).get("text");
         if (caption != null) {
             instance.caption = caption;
         }
@@ -198,25 +199,25 @@ public class Media {
             instance.type = TYPE_VIDEO;
             instance.videoViews = ((Double) mediaMap.get("video_views")).intValue();
         }
-        if(mediaMap.containsKey("carousel_media")){
-        	instance.type = TYPE_CAROUSEL;
-        	instance.carouselMedia = new ArrayList<CarouselMedia>();
-        	for(Map<String, Object> carouselMap : ((List<Map>) mediaMap.get("carousel_media"))){
-        		CarouselMedia carouselMedia = new CarouselMedia();
-        		carouselMedia.type = (String) carouselMap.get("type");
-        		
-        		if(carouselMap.containsKey("images")){
-        			Map carouselImages = (Map) carouselMap.get("images");
-        	        fillCarouselImageUrls(carouselMedia, (String)((Map)carouselImages.get("standard_resolution")).get("url"));
-        		}
-        		if (carouselMedia.type.equals(TYPE_VIDEO) && carouselMap.containsKey("videos")) {
+        if (mediaMap.containsKey("carousel_media")) {
+            instance.type = TYPE_CAROUSEL;
+            instance.carouselMedia = new ArrayList<CarouselMedia>();
+            for (Map<String, Object> carouselMap : ((List<Map>) mediaMap.get("carousel_media"))) {
+                CarouselMedia carouselMedia = new CarouselMedia();
+                carouselMedia.type = (String) carouselMap.get("type");
+
+                if (carouselMap.containsKey("images")) {
+                    Map carouselImages = (Map) carouselMap.get("images");
+                    fillCarouselImageUrls(carouselMedia, (String) ((Map) carouselImages.get("standard_resolution")).get("url"));
+                }
+                if (carouselMedia.type.equals(TYPE_VIDEO) && carouselMap.containsKey("videos")) {
                     Map carouselVideos = (Map) carouselMap.get("videos");
                     carouselMedia.videoUrls.low = (String) ((Map) carouselVideos.get("low_resolution")).get("url");
                     carouselMedia.videoUrls.standard = (String) ((Map) carouselVideos.get("standard_resolution")).get("url");
                     carouselMedia.videoUrls.lowBandwidth = (String) ((Map) carouselVideos.get("low_bandwidth")).get("url");
                 }
-        		instance.carouselMedia.add(carouselMedia);
-        	}
+                instance.carouselMedia.add(carouselMedia);
+            }
         }
         instance.id = (String) mediaMap.get("id");
         return instance;
@@ -236,7 +237,7 @@ public class Media {
             e.printStackTrace();
         }
     }
-    
+
     private static void fillCarouselImageUrls(final CarouselMedia instance, String imageUrl) {
         URL url;
         try {
